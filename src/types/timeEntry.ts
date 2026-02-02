@@ -4,6 +4,9 @@ export interface TimeEntry {
   teamName?: string;
   task: string;
   subTask?: string;
+  assignedVolume?: number;
+  processedVolume?: number;
+  remainingDeficit?: number;
   startTime: string;
   endTime: string;
   duration: number;

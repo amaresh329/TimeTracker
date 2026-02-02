@@ -44,6 +44,8 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   const [selectedTeam, setSelectedTeam] = useState("");
   const [selectedTask, setSelectedTask] = useState("");
   const [subTask, setSubTask] = useState("");
+  const [assignedVolume, setAssignedVolume] = useState<number | "">("");
+  const [processedVolume, setProcessedVolume] = useState<number | "">("");
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -88,6 +90,11 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
       teamName: selectedTeam || undefined,
       task: selectedTask,
       subTask: subTask.trim() || undefined,
+      assignedVolume: assignedVolume === "" ? undefined : Number(assignedVolume),
+      processedVolume: processedVolume === "" ? undefined : Number(processedVolume),
+      remainingDeficit: assignedVolume !== "" && processedVolume !== "" 
+        ? Math.max(0, Number(assignedVolume) - Number(processedVolume))
+        : undefined,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       duration: elapsedTime,
@@ -208,6 +215,51 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
             disabled={isRunning}
             className="h-11"
           />
+        </div>
+
+        {/* Volume Inputs */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="assignedVolume">Assigned Volume</Label>
+            <Input
+              id="assignedVolume"
+              type="number"
+              placeholder="0"
+              value={assignedVolume}
+              onChange={(e) => setAssignedVolume(e.target.value === "" ? "" : Number(e.target.value))}
+              disabled={isRunning}
+              className="h-11"
+              min="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="processedVolume">Processed Volume</Label>
+            <Input
+              id="processedVolume"
+              type="number"
+              placeholder="0"
+              value={processedVolume}
+              onChange={(e) => setProcessedVolume(e.target.value === "" ? "" : Number(e.target.value))}
+              disabled={isRunning}
+              className="h-11"
+              min="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="remainingDeficit">Remaining/Deficit</Label>
+            <Input
+              id="remainingDeficit"
+              type="number"
+              placeholder="0"
+              value={
+                assignedVolume !== "" && processedVolume !== ""
+                  ? Math.max(0, Number(assignedVolume) - Number(processedVolume))
+                  : ""
+              }
+              disabled
+              className="h-11 bg-muted"
+            />
+          </div>
         </div>
 
    
