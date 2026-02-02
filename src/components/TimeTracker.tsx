@@ -93,7 +93,7 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
       assignedVolume: assignedVolume === "" ? undefined : Number(assignedVolume),
       processedVolume: processedVolume === "" ? undefined : Number(processedVolume),
       remainingDeficit: assignedVolume !== "" && processedVolume !== "" 
-        ? Math.max(0, Number(assignedVolume) - Number(processedVolume))
+        ? Number(assignedVolume) - Number(processedVolume)
         : undefined,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
@@ -253,7 +253,7 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
               placeholder="0"
               value={
                 assignedVolume !== "" && processedVolume !== ""
-                  ? Math.max(0, Number(assignedVolume) - Number(processedVolume))
+                  ? Number(assignedVolume) - Number(processedVolume)
                   : ""
               }
               disabled
