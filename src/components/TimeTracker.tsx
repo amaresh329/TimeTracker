@@ -226,7 +226,10 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
               type="number"
               placeholder="0"
               value={assignedVolume}
-              onChange={(e) => setAssignedVolume(e.target.value === "" ? "" : Number(e.target.value))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                setAssignedVolume(e.target.value === "" ? "" : (value >= 0 ? value : assignedVolume));
+              }}
               disabled={isRunning}
               className="h-11"
               min="0"
@@ -239,7 +242,10 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
               type="number"
               placeholder="0"
               value={processedVolume}
-              onChange={(e) => setProcessedVolume(e.target.value === "" ? "" : Number(e.target.value))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                setProcessedVolume(e.target.value === "" ? "" : (value >= 0 ? value : processedVolume));
+              }}
               disabled={isRunning}
               className="h-11"
               min="0"
