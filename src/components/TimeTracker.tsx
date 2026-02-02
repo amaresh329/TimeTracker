@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Play, Square, Clock, User, FileSpreadsheet } from "lucide-react";
+import { Play, Square, Clock, User, FileSpreadsheet, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,16 +15,24 @@ import { TimeEntry } from "@/types/timeEntry";
 import { cn } from "@/lib/utils";
 
 const TASKS = [
-  "Development",
-  "Design",
+  "Processing",
+  "Auditing",
   "Meeting",
-  "Code Review",
-  "Testing",
-  "Documentation",
-  "Research",
-  "Planning",
-  "Bug Fixing",
-  "Deployment",
+  "Training",
+  "Break",
+  "Reports",
+  "Idle",
+  "Other Activities",
+ 
+];
+
+const TEAMS = [
+  "Flex Comp",
+  "LOA",
+  "COBRA",
+  "Benefits Support",
+  "Terminations",
+ 
 ];
 
 interface TimeTrackerProps {
@@ -33,7 +41,9 @@ interface TimeTrackerProps {
 
 export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   const [userName, setUserName] = useState("");
+  const [selectedTeam, setSelectedTeam] = useState("");
   const [selectedTask, setSelectedTask] = useState("");
+  const [subTask, setSubTask] = useState("");
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
@@ -75,7 +85,9 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
     const entry: TimeEntry = {
       id: crypto.randomUUID(),
       userName: userName.trim(),
+      teamName: selectedTeam || undefined,
       task: selectedTask,
+      subTask: subTask.trim() || undefined,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       duration: elapsedTime,
@@ -134,6 +146,30 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
           />
         </div>
 
+        {/* Team Selection */}
+        <div className="space-y-2">
+          <Label htmlFor="team" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Select Team
+          </Label>
+          <Select
+            value={selectedTeam}
+            onValueChange={setSelectedTeam}
+            disabled={isRunning}
+          >
+            <SelectTrigger className="h-11 bg-card">
+              <SelectValue placeholder="Choose a team" />
+            </SelectTrigger>
+            <SelectContent className="bg-card border shadow-lg z-50">
+              {TEAMS.map((team) => (
+                <SelectItem key={team} value={team}>
+                  {team}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Task Selection */}
         <div className="space-y-2">
           <Label htmlFor="task" className="flex items-center gap-2">
@@ -157,6 +193,24 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
             </SelectContent>
           </Select>
         </div>
+
+        {/* Sub Task Input */}
+        <div className="space-y-2">
+          <Label htmlFor="subTask" className="flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Sub Task
+          </Label>
+          <Input
+            id="subTask"
+            placeholder="Enter sub task (optional)"
+            value={subTask}
+            onChange={(e) => setSubTask(e.target.value)}
+            disabled={isRunning}
+            className="h-11"
+          />
+        </div>
+
+   
 
         {/* Action Buttons */}
         <div className="flex gap-3 pt-2">

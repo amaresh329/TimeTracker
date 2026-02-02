@@ -1,4 +1,4 @@
-import { Download, Clock, User, Briefcase, Trash2 } from "lucide-react";
+import { Download, Clock, User, Briefcase, Trash2, Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -27,10 +27,13 @@ export const TimeEntriesList = ({
 
     const exportData = entries.map((entry) => ({
       "User Name": entry.userName,
-      Task: entry.task,
-      "Start Time": format(new Date(entry.startTime), "yyyy-MM-dd HH:mm:ss"),
-      "End Time": format(new Date(entry.endTime), "yyyy-MM-dd HH:mm:ss"),
-      Duration: entry.formattedDuration,
+      "Team": entry.teamName || "",
+      "Task": entry.task,
+      "Sub Task": entry.subTask || "",
+      "Date": format(new Date(entry.startTime), "yyyy-MM-dd"),
+      "Start Time": format(new Date(entry.startTime), "HH:mm:ss"),
+      "End Time": format(new Date(entry.endTime), "HH:mm:ss"),
+      "Duration": entry.formattedDuration,
       "Duration (seconds)": entry.duration,
     }));
 
@@ -119,8 +122,21 @@ export const TimeEntriesList = ({
                   </TableHead>
                   <TableHead className="font-semibold">
                     <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Team
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
                       Task
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold">Sub Task</TableHead>
+                  <TableHead className="font-semibold">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Date
                     </div>
                   </TableHead>
                   <TableHead className="font-semibold">Start</TableHead>
@@ -137,9 +153,18 @@ export const TimeEntriesList = ({
                       {entry.userName}
                     </TableCell>
                     <TableCell>
+                      {entry.teamName || "-"}
+                    </TableCell>
+                    <TableCell>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
                         {entry.task}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {entry.subTask || "-"}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(entry.startTime), "yyyy-MM-dd")}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(entry.startTime), "HH:mm:ss")}
