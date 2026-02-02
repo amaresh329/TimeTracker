@@ -11,8 +11,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { TimeEntry } from "@/types/timeEntry";
 import { cn } from "@/lib/utils";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 const TASKS = [
   "Processing",
@@ -27,13 +30,116 @@ const TASKS = [
 ];
 
 const TEAMS = [
-  "Flex Comp",
+  "Cobra",
+  "Flex comp",
   "LOA",
-  "COBRA",
-  "Benefits Support",
-  "Terminations",
- 
+  "Benefits",
+  "Retirement",
+  "Others",
 ];
+
+const TEAM_SUBTASKS: Record<string, string[]> = {
+  "Cobra": [
+    "Email Rehire Process",
+    "Audit",
+    "Confirmation Statement",
+    "Confirmation Statement Image to PC & Email",
+    "DAR Term Mail Merge and Print",
+    "Dual Enrollment",
+    "Enrollment",
+    "Image Payments to PC",
+    "Ineligible Letter Generation",
+    "Initial Election Notice Imaging and Emailing",
+    "Open Enrollment",
+    "Quarterly Exhaust Letters",
+    "Refund Audit",
+    "Address Change",
+    "C Number Query",
+  ],
+  "Flex comp": [
+    "Assigning Salesforce Cases",
+    "Changes Report",
+    "Daily Metric Report",
+    "EDI Error Report",
+    "EE - Repayment",
+    "Linking Audit",
+    "Linking Unassigned Document",
+    "SOI Posi pay report",
+    "POS Merchant Refund Process",
+    "Credit Failure Process",
+    "Direct Deposit information in Alegeus",
+    "$1 HSA Election Report",
+    "Claim with No Doc",
+    "Flex Comp - HSA Pushout",
+    "Mailer Labels",
+    "HSA Client Contribution Reports",
+    "Optum Suspense Return Process",
+    "Debit Card Adjudication",
+    "Debit Card Adjudication by Image Date",
+    "Participant Claims Adjudication",
+    "Claims by Image Date Process",
+    "Creating Manual Claims by Adjudication",
+    "Health Equity CB Exception file",
+    "New to Pending in Alegeus",
+  ],
+  "LOA": [
+    "Termination (Client)",
+    "Termination (WSE)",
+    "Fitness for Duty to Role Holder",
+    "Verify Return to Work",
+    "Case Scrubbing and Assignment",
+    "Responding to the Hartford Short Term Disability",
+    "Open Events Process",
+    "Return to Work",
+    "Leave Adjustment Process",
+    "Manual Leave Accrual Process",
+    "Cancelling Service Order Actions",
+    "State Disability Forms - CA EDD",
+    "State Disability Forms - NY",
+  ],
+  "Benefits": [
+    "Consulting Team - BSS Reports process",
+    "Consulting Team - Dependent Data Reports",
+    "Services - BAC Emails to Salesforce Case",
+    "Services - Canadian Open Events",
+    "Services - Run Open Events Report and Sort (Daily Metric Report)",
+    "Services - ImageNow Linking",
+    "Services - ImageNow Linking Routing",
+    "Services - Open Events Address Change/Transfer",
+    "Services - Part Time and Regular Temporary Report",
+    "Services - SO Rehires",
+    "Services - Term'd Employees w/Active Benefits",
+    "HR Services - Close Loop Process",
+    "Insurance Services - Recon - TriNet Billing Email Validation",
+    "Insurance Services - Recon EDI/Election Lookup",
+    "Internal Audit - SOC Services Request",
+    "Life & Disability - Aetna STD/LTD Denial Process",
+    "7 Day Letter",
+    "Services salesforce work distribution process(general Cue)",
+    "Services salesforce work distribution process(30 Cues)",
+    "Open Events Report(Brandon)",
+    "Aduit team(BAT)",
+  ],
+  "Retirement": [
+    "Email Case SCRUB in Salesforce",
+    "Employer Sponsored Plan",
+    "Passport - Prior Deferral Contribution Entry",
+    "Pre-approval of WSE communication",
+    "Simple IRA Catch-Up Process",
+    "Passport - Loan Entry",
+    "Qualtrics - Scheduling Survey Reminders",
+    "MASS HIRD",
+  ],
+  "Others": [
+    "Bio Break",
+    "Lunch Break",
+    "Dinner Break",
+    "Meeting",
+    "Report",
+    "Idle",
+    "Down Time",
+  ],
+};
 
 interface TimeTrackerProps {
   onTimeEntryComplete: (entry: TimeEntry) => void;
@@ -49,6 +155,7 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   const [isRunning, setIsRunning] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
+  const [subTaskOpen, setSubTaskOpen] = useState(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -161,7 +268,11 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
           </Label>
           <Select
             value={selectedTeam}
-            onValueChange={setSelectedTeam}
+            onValueChange={(value) => {
+              setSelectedTeam(value);
+              setSubTask(""); // Clear subtask when team changes
+              setSubTaskOpen(false); // Close subtask dropdown
+            }}
             disabled={isRunning}
           >
             <SelectTrigger className="h-11 bg-card">
@@ -201,20 +312,65 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
           </Select>
         </div>
 
-        {/* Sub Task Input */}
+        {/* Sub Task Input/Dropdown */}
         <div className="space-y-2">
           <Label htmlFor="subTask" className="flex items-center gap-2">
             <FileSpreadsheet className="w-4 h-4" />
             Sub Task
           </Label>
-          <Input
-            id="subTask"
-            placeholder="Enter sub task (optional)"
-            value={subTask}
-            onChange={(e) => setSubTask(e.target.value)}
-            disabled={isRunning}
-            className="h-11"
-          />
+          {selectedTeam ? (
+            <Popover open={subTaskOpen} onOpenChange={setSubTaskOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={subTaskOpen}
+                  className="w-full justify-between h-11 bg-card"
+                  disabled={isRunning}
+                >
+                  {subTask || "Choose a sub task..."}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search subtasks..." />
+                  <CommandList>
+                    <CommandEmpty>No subtask found.</CommandEmpty>
+                    <CommandGroup>
+                      {TEAM_SUBTASKS[selectedTeam]?.map((item) => (
+                        <CommandItem
+                          key={item}
+                          value={item}
+                          onSelect={(value) => {
+                            setSubTask(value === subTask ? "" : value);
+                            setSubTaskOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              subTask === item ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {item}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            <Input
+              id="subTask"
+              placeholder="Select a team first"
+              value={subTask}
+              onChange={(e) => setSubTask(e.target.value)}
+              disabled
+              className="h-11"
+            />
+          )}
         </div>
 
         {/* Volume Inputs */}
