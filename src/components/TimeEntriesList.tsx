@@ -26,11 +26,11 @@ export const TimeEntriesList = ({
     if (entries.length === 0) return;
 
     const exportData = entries.map((entry) => ({
+      "Date": format(new Date(entry.startTime), "yyyy-MM-dd"),
       "User Name": entry.userName,
       "Team": entry.teamName || "",
       "Task": entry.task,
       "Sub Task": entry.subTask || "",
-      "Date": format(new Date(entry.startTime), "yyyy-MM-dd"),
       "Start Time": format(new Date(entry.startTime), "HH:mm:ss"),
       "End Time": format(new Date(entry.endTime), "HH:mm:ss"),
       "Duration": entry.formattedDuration,
@@ -116,6 +116,12 @@ export const TimeEntriesList = ({
                 <TableRow className="bg-muted/50">
                   <TableHead className="font-semibold">
                     <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Date
+                    </div>
+                  </TableHead>
+                  <TableHead className="font-semibold">
+                    <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       User
                     </div>
@@ -133,12 +139,6 @@ export const TimeEntriesList = ({
                     </div>
                   </TableHead>
                   <TableHead className="font-semibold">Sub Task</TableHead>
-                  <TableHead className="font-semibold">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4" />
-                      Date
-                    </div>
-                  </TableHead>
                   <TableHead className="font-semibold">Start</TableHead>
                   <TableHead className="font-semibold">End</TableHead>
                   <TableHead className="font-semibold text-right">
@@ -149,6 +149,9 @@ export const TimeEntriesList = ({
               <TableBody>
                 {entries.map((entry) => (
                   <TableRow key={entry.id}>
+                    <TableCell className="text-muted-foreground">
+                      {format(new Date(entry.startTime), "yyyy-MM-dd")}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {entry.userName}
                     </TableCell>
@@ -162,9 +165,6 @@ export const TimeEntriesList = ({
                     </TableCell>
                     <TableCell>
                       {entry.subTask || "-"}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {format(new Date(entry.startTime), "yyyy-MM-dd")}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {format(new Date(entry.startTime), "HH:mm:ss")}
