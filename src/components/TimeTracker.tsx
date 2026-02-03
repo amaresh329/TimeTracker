@@ -40,7 +40,7 @@ const TASKS = [
 ];
 
 const TEAMS = [
-  "Cobra",
+  "COBRA",
   "FSA",
   "LOA",
   "Benefits",
@@ -49,7 +49,7 @@ const TEAMS = [
 ];
 
 const TEAM_SUBTASKS: Record<string, string[]> = {
-  "Cobra": [
+  "COBRA": [
     "Email Rehire Process",
     "Audit",
     "Confirmation Statement",
@@ -283,35 +283,7 @@ const formatTime = useCallback((seconds: number) => {
     setStopDialogOpen(true);
   };
 
-  // const handleConfirmStop = () => {
-  //   if (!startTime) return;
 
-  //   const endTime = new Date();
-  //   const entry: TimeEntry = {
-  //     id: crypto.randomUUID(),
-  //     userName: userName.trim(),
-  //     teamName: selectedTeam || undefined,
-  //     task: selectedTask,
-  //     subTask: subTask.trim() || undefined,
-  //     assignedVolume: assignedVolume === "" ? undefined : Number(assignedVolume),
-  //     processedVolume: tempProcessedVolume === "" ? undefined : Number(tempProcessedVolume),
-  //     remainingDeficit: assignedVolume !== "" && tempProcessedVolume !== "" 
-  //       ? Number(assignedVolume) - Number(tempProcessedVolume)
-  //       : undefined,
-  //     startTime: startTime.toISOString(),
-  //     endTime: endTime.toISOString(),
-  //     duration: elapsedTime,
-  //     formattedDuration: formatTime(elapsedTime),
-  //   };
-
-  //   onTimeEntryComplete(entry);
-  //   setIsRunning(false);
-  //   setElapsedTime(0);
-  //   setStartTime(null);
-  //   setProcessedVolume(tempProcessedVolume); // Update the actual processed volume
-  //   setStopDialogOpen(false);
-  //   setTempProcessedVolume("");
-  // };
 
   const handleConfirmStop = () => {
     if (!startTime) return;
@@ -683,7 +655,7 @@ const formatTime = useCallback((seconds: number) => {
                     className="w-full justify-between h-11 bg-card"
                     disabled={isRunning}
                   >
-                    {subTask ? `${selectedTeam}-${subTask}` : "Choose a sub task..."}
+                    {subTask ? `${selectedTeam} - ${subTask}` : "Choose a sub task..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -744,7 +716,7 @@ const formatTime = useCallback((seconds: number) => {
                                   subTask === item ? "opacity-100" : "opacity-0"
                                 )}
                               />
-                              {`${selectedTeam}-${item}`}
+                              {`${selectedTeam} - ${item}`}
                             </div>
                             <Button
                               variant="ghost"
