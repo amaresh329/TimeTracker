@@ -31,7 +31,7 @@ export const TimeEntriesList = ({
       "Team": entry.teamName || "",
       "Task": entry.task,
       "Sub Task": entry.subTask || "",      "Assigned Volume": entry.assignedVolume ?? "",
-      "Processed Volume": entry.processedVolume ?? "",
+      // "Processed Volume": entry.processedVolume ?? "",
       "Remaining/Deficit": entry.remainingDeficit ?? "",      "Start Time": format(new Date(entry.startTime), "HH:mm:ss"),
       "End Time": format(new Date(entry.endTime), "HH:mm:ss"),
       "Duration": entry.formattedDuration,
@@ -141,7 +141,7 @@ export const TimeEntriesList = ({
                   </TableHead>
                   <TableHead className="font-semibold">Sub Task</TableHead>
                   <TableHead className="font-semibold text-right">Assigned Vol.</TableHead>
-                  <TableHead className="font-semibold text-right">Processed Vol.</TableHead>
+                  {/* <TableHead className="font-semibold text-right">Processed Vol.</TableHead> */}
                   <TableHead className="font-semibold text-right">Remaining/Deficit</TableHead>
                   <TableHead className="font-semibold">Start</TableHead>
                   <TableHead className="font-semibold">End</TableHead>
@@ -173,9 +173,9 @@ export const TimeEntriesList = ({
                     <TableCell className="text-right">
                       {entry.assignedVolume ?? "-"}
                     </TableCell>
-                    <TableCell className="text-right">
+                    {/* <TableCell className="text-right">
                       {entry.processedVolume ?? "-"}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="text-right">
                       {entry.remainingDeficit ?? "-"}
                     </TableCell>

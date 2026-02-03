@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Play, Square, Clock, User, FileSpreadsheet, Users } from "lucide-react";
+import { Play, Square, Clock, User, FileSpreadsheet, Users, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,16 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { TimeEntry } from "@/types/timeEntry";
 import { cn } from "@/lib/utils";
 import { Check, ChevronsUpDown } from "lucide-react";
@@ -31,7 +41,7 @@ const TASKS = [
 
 const TEAMS = [
   "Cobra",
-  "Flex comp",
+  "FSA",
   "LOA",
   "Benefits",
   "Retirement",
@@ -56,7 +66,7 @@ const TEAM_SUBTASKS: Record<string, string[]> = {
     "Address Change",
     "C Number Query",
   ],
-  "Flex comp": [
+  "FSA": [
     "Assigning Salesforce Cases",
     "Changes Report",
     "Daily Metric Report",
@@ -156,7 +166,19 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [subTaskOpen, setSubTaskOpen] = useState(false);
-
+  const [isAddingNewSubTask, setIsAddingNewSubTask] = useState(false);
+  const [newSubTaskInput, setNewSubTaskInput] = useState("");
+  const [teamSubTasks, setTeamSubTasks] = useState<Record<string, string[]>>(TEAM_SUBTASKS);
+  const [userAddedSubTasks, setUserAddedSubTasks] = useState<Record<string, string[]>>({});
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [subTaskToDelete, setSubTaskToDelete] = useState<string | null>(null);
+  const [stopDialogOpen, setStopDialogOpen] = useState(false);
+  const [tempProcessedVolume, setTempProcessedVolume] = useState<number | "">("");
+  const [teams, setTeams] = useState<string[]>(TEAMS);
+  const [teamOpen, setTeamOpen] = useState(false);
+  const [isAddingNewTeam, setIsAddingNewTeam] = useState(false);
+  const [newTeamInput, setNewTeamInput] = useState("");
+  const [addTeamConfirmOpen, setAddTeamConfirmOpen] = useState(false);
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
 
@@ -187,8 +209,44 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
     setElapsedTime(0);
   };
 
+  // const handleStop = () => {
+  //   if (!isRunning || !startTime) return;
+
+  //   const endTime = new Date();
+  //   const entry: TimeEntry = {
+  //     id: crypto.randomUUID(),
+  //     userName: userName.trim(),
+  //     teamName: selectedTeam || undefined,
+  //     task: selectedTask,
+  //     subTask: subTask.trim() || undefined,
+  //     assignedVolume: assignedVolume === "" ? undefined : Number(assignedVolume),
+  //     processedVolume: processedVolume === "" ? undefined : Number(processedVolume),
+  //     remainingDeficit: assignedVolume !== "" && processedVolume !== "" 
+  //       ? Number(assignedVolume) - Number(processedVolume)
+  //       : undefined,
+
+  //     startTime: startTime.toISOString(),
+  //     endTime: endTime.toISOString(),
+  //     duration: elapsedTime,
+  //     formattedDuration: formatTime(elapsedTime),
+  //   };
+
+  //   onTimeEntryComplete(entry);
+  //   setIsRunning(false);
+  //   setElapsedTime(0);
+  //   setStartTime(null);
+  // };
   const handleStop = () => {
     if (!isRunning || !startTime) return;
+    
+    // Store current processed volume in temp state
+    setTempProcessedVolume(processedVolume);
+    // Open dialog to enter processed volume
+    setStopDialogOpen(true);
+  };
+
+  const handleConfirmStop = () => {
+    if (!startTime) return;
 
     const endTime = new Date();
     const entry: TimeEntry = {
@@ -198,9 +256,9 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
       task: selectedTask,
       subTask: subTask.trim() || undefined,
       assignedVolume: assignedVolume === "" ? undefined : Number(assignedVolume),
-      processedVolume: processedVolume === "" ? undefined : Number(processedVolume),
-      remainingDeficit: assignedVolume !== "" && processedVolume !== "" 
-        ? Number(assignedVolume) - Number(processedVolume)
+      processedVolume: tempProcessedVolume === "" ? undefined : Number(tempProcessedVolume),
+      remainingDeficit: assignedVolume !== "" && tempProcessedVolume !== "" 
+        ? Number(assignedVolume) - Number(tempProcessedVolume)
         : undefined,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
@@ -212,10 +270,114 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
     setIsRunning(false);
     setElapsedTime(0);
     setStartTime(null);
+    setProcessedVolume(tempProcessedVolume); // Update the actual processed volume
+    setStopDialogOpen(false);
+    setTempProcessedVolume("");
   };
 
+  const handleCancelStop = () => {
+    setStopDialogOpen(false);
+    setTempProcessedVolume("");
+  };
   const canStart = userName.trim() && selectedTask && !isRunning;
   const canStop = isRunning;
+
+  const handleAddNewSubTask = () => {
+    if (newSubTaskInput.trim() && selectedTeam) {
+      const trimmedInput = newSubTaskInput.trim();
+      setTeamSubTasks(prev => ({
+        ...prev,
+        [selectedTeam]: [...(prev[selectedTeam] || []), trimmedInput]
+      }));
+      setUserAddedSubTasks(prev => ({
+        ...prev,
+        [selectedTeam]: [...(prev[selectedTeam] || []), trimmedInput]
+      }));
+      setSubTask(trimmedInput);
+      setNewSubTaskInput("");
+      setIsAddingNewSubTask(false);
+      setSubTaskOpen(false);
+    }
+  };
+
+  const handleSubTaskSelect = (value: string) => {
+    if (value === "__add_new__") {
+      setIsAddingNewSubTask(true);
+      setSubTaskOpen(false);
+    } else {
+      setSubTask(value === subTask ? "" : value);
+      setSubTaskOpen(false);
+    }
+  };
+
+  const handleDeleteSubTask = (subTaskToDelete: string) => {
+    if (selectedTeam) {
+      setTeamSubTasks(prev => ({
+        ...prev,
+        [selectedTeam]: prev[selectedTeam]?.filter(item => item !== subTaskToDelete) || []
+      }));
+      // Also remove from user-added if it was user-added
+      setUserAddedSubTasks(prev => ({
+        ...prev,
+        [selectedTeam]: prev[selectedTeam]?.filter(item => item !== subTaskToDelete) || []
+      }));
+      if (subTask === subTaskToDelete) {
+        setSubTask("");
+      }
+    }
+  };
+
+
+  const handleConfirmDelete = () => {
+    if (subTaskToDelete) {
+      handleDeleteSubTask(subTaskToDelete);
+      setDeleteConfirmOpen(false);
+      setSubTaskToDelete(null);
+    }
+  };
+
+  const handleTeamSelect = (value: string) => {
+    if (value === "__add_new_team__") {
+      setIsAddingNewTeam(true);
+      setTeamOpen(false);
+    } else {
+      setSelectedTeam(value);
+      setSubTask(""); // Clear subtask when team changes
+      setSubTaskOpen(false); // Close subtask dropdown
+      setIsAddingNewSubTask(false); // Reset add new state
+      setNewSubTaskInput(""); // Clear input
+      setTeamOpen(false);
+    }
+  };
+
+  const handleAddNewTeam = () => {
+    if (newTeamInput.trim()) {
+      setAddTeamConfirmOpen(true);
+    }
+  };
+
+  const handleConfirmAddTeam = () => {
+    if (newTeamInput.trim()) {
+      const trimmedInput = newTeamInput.trim();
+      setTeams(prev => [...prev, trimmedInput]);
+      setTeamSubTasks(prev => ({
+        ...prev,
+        [trimmedInput]: []
+      }));
+      setSelectedTeam(trimmedInput);
+      setNewTeamInput("");
+      setIsAddingNewTeam(false);
+      setAddTeamConfirmOpen(false);
+      setSubTask(""); // Clear subtask
+    }
+  };
+
+  const handleCancelAddTeam = () => {
+    setAddTeamConfirmOpen(false);
+    setIsAddingNewTeam(false);
+    setNewTeamInput("");
+    setTeamOpen(true);
+  };
 
   return (
     <Card className="w-full max-w-lg shadow-[var(--shadow-card)] border-0 bg-card">
@@ -260,33 +422,7 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
           />
         </div>
 
-        {/* Team Selection */}
-        <div className="space-y-2">
-          <Label htmlFor="team" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            Select Team
-          </Label>
-          <Select
-            value={selectedTeam}
-            onValueChange={(value) => {
-              setSelectedTeam(value);
-              setSubTask(""); // Clear subtask when team changes
-              setSubTaskOpen(false); // Close subtask dropdown
-            }}
-            disabled={isRunning}
-          >
-            <SelectTrigger className="h-11 bg-card">
-              <SelectValue placeholder="Choose a team" />
-            </SelectTrigger>
-            <SelectContent className="bg-card border shadow-lg z-50">
-              {TEAMS.map((team) => (
-                <SelectItem key={team} value={team}>
-                  {team}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+
 
         {/* Task Selection */}
         <div className="space-y-2">
@@ -312,48 +448,92 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
           </Select>
         </div>
 
-        {/* Sub Task Input/Dropdown */}
+        {/* Team Selection */}
         <div className="space-y-2">
-          <Label htmlFor="subTask" className="flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4" />
-            Sub Task
+          <Label htmlFor="team" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Select Team
           </Label>
-          {selectedTeam ? (
-            <Popover open={subTaskOpen} onOpenChange={setSubTaskOpen}>
+          {isAddingNewTeam ? (
+            <div className="space-y-2">
+              <Input
+                placeholder="Enter new team name"
+                value={newTeamInput}
+                onChange={(e) => setNewTeamInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddNewTeam();
+                  } else if (e.key === "Escape") {
+                    setIsAddingNewTeam(false);
+                    setNewTeamInput("");
+                    setTeamOpen(true);
+                  }
+                }}
+                autoFocus
+                className="h-11"
+              />
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleAddNewTeam}
+                  disabled={!newTeamInput.trim()}
+                >
+                  Add
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingNewTeam(false);
+                    setNewTeamInput("");
+                    setTeamOpen(true);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Popover open={teamOpen} onOpenChange={setTeamOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   role="combobox"
-                  aria-expanded={subTaskOpen}
+                  aria-expanded={teamOpen}
                   className="w-full justify-between h-11 bg-card"
                   disabled={isRunning}
                 >
-                  {subTask || "Choose a sub task..."}
+                  {selectedTeam || "Choose a team..."}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0" align="start">
                 <Command>
-                  <CommandInput placeholder="Search subtasks..." />
+                  <CommandInput placeholder="Search teams..." />
                   <CommandList>
-                    <CommandEmpty>No subtask found.</CommandEmpty>
+                    <CommandEmpty>No team found.</CommandEmpty>
                     <CommandGroup>
-                      {TEAM_SUBTASKS[selectedTeam]?.map((item) => (
+                      <CommandItem
+                        value="__add_new_team__"
+                        onSelect={handleTeamSelect}
+                        className="border-b mb-2 pb-2"
+                      >
+                        <span className="text-blue-600 dark:text-blue-400 font-medium">+ Add new team</span>
+                      </CommandItem>
+                      {teams.map((team) => (
                         <CommandItem
-                          key={item}
-                          value={item}
-                          onSelect={(value) => {
-                            setSubTask(value === subTask ? "" : value);
-                            setSubTaskOpen(false);
-                          }}
+                          key={team}
+                          value={team}
+                          onSelect={handleTeamSelect}
+                          className="flex items-center"
                         >
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              subTask === item ? "opacity-100" : "opacity-0"
+                              selectedTeam === team ? "opacity-100" : "opacity-0"
                             )}
                           />
-                          {item}
+                          {team}
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -361,6 +541,160 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
                 </Command>
               </PopoverContent>
             </Popover>
+          )}
+        </div>
+      
+
+        {/* Sub Task Input/Dropdown */}
+        <div className="space-y-2">
+          <Label htmlFor="subTask" className="flex items-center gap-2">
+            <FileSpreadsheet className="w-4 h-4" />
+            Sub Task
+          </Label>
+          {selectedTeam ? (
+            isAddingNewSubTask ? (
+              <div className="space-y-2">
+                <Input
+                  placeholder="Enter new sub-task name"
+                  value={newSubTaskInput}
+                  onChange={(e) => setNewSubTaskInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddNewSubTask();
+                    } else if (e.key === "Escape") {
+                      setIsAddingNewSubTask(false);
+                      setNewSubTaskInput("");
+                      setSubTaskOpen(true);
+                    }
+                  }}
+                  autoFocus
+                  className="h-11"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={handleAddNewSubTask}
+                    disabled={!newSubTaskInput.trim()}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddingNewSubTask(false);
+                      setNewSubTaskInput("");
+                      setSubTaskOpen(true);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Popover open={subTaskOpen} onOpenChange={setSubTaskOpen}>
+                <PopoverTrigger asChild>
+                  {/* <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={subTaskOpen}
+                    className="w-full justify-between h-11 bg-card"
+                    disabled={isRunning}
+                  >
+                    {subTask || "Choose a sub task..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button> */}
+
+<Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={subTaskOpen}
+                    className="w-full justify-between h-11 bg-card"
+                    disabled={isRunning}
+                  >
+                    {subTask ? `${selectedTeam}-${subTask}` : "Choose a sub task..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search subtasks..." />
+                    <CommandList>
+                      <CommandEmpty>No subtask found.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="__add_new__"
+                          onSelect={handleSubTaskSelect}
+                          className="border-b mb-2 pb-2"
+                        >
+                          <span className="text-blue-600 dark:text-blue-400 font-medium">+ Add new sub-task</span>
+                        </CommandItem>
+                        {/* {teamSubTasks[selectedTeam]?.map((item) => (
+                          <CommandItem
+                            key={item}
+                            value={item}
+                            onSelect={handleSubTaskSelect}
+                            className="flex items-center justify-between group"
+                          >
+                            <div className="flex items-center">
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  subTask === item ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {item}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all duration-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSubTaskToDelete(item);
+                                setDeleteConfirmOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </CommandItem>
+                        ))} */}
+                                              {teamSubTasks[selectedTeam]?.map((item) => (
+                          <CommandItem
+                            key={item}
+                            value={item}
+                            onSelect={handleSubTaskSelect}
+                            className="flex items-center justify-between group"
+                          >
+                            <div className="flex items-center">
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  subTask === item ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {`${selectedTeam}-${item}`}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400 transition-all duration-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSubTaskToDelete(item);
+                                setDeleteConfirmOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </CommandItem>
+                        ))}  
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )
           ) : (
             <Input
               id="subTask"
@@ -446,7 +780,97 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
             Stop
           </Button>
         </div>
+        
       </CardContent>
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Sub-task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{subTaskToDelete}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteConfirmOpen(false);
+              setSubTaskToDelete(null);
+            }}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={stopDialogOpen} onOpenChange={setStopDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Enter Processed Volume</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please enter the processed volume before completing this time entry.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="dialogProcessedVolume">Processed Volume</Label>
+            <Input
+              id="dialogProcessedVolume"
+              type="number"
+              placeholder="0"
+              value={tempProcessedVolume}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                setTempProcessedVolume(e.target.value === "" ? "" : (value >= 0 ? value : tempProcessedVolume));
+              }}
+              className="h-11 mt-2"
+              min="0"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  handleConfirmStop();
+                } else if (e.key === "Escape") {
+                  handleCancelStop();
+                }
+              }}
+            />
+            {assignedVolume !== "" && tempProcessedVolume !== "" && (
+              <div className="mt-2 text-sm text-muted-foreground">
+                Remaining/Deficit: {Number(assignedVolume) - Number(tempProcessedVolume)}
+              </div>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelStop}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmStop}>
+              Complete Entry
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={addTeamConfirmOpen} onOpenChange={setAddTeamConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add New Team</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are You Sure You want to add this team "{newTeamInput}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelAddTeam}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmAddTeam}>
+              Add
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </Card>
   );
 };
