@@ -179,21 +179,70 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   const [isAddingNewTeam, setIsAddingNewTeam] = useState(false);
   const [newTeamInput, setNewTeamInput] = useState("");
   const [addTeamConfirmOpen, setAddTeamConfirmOpen] = useState(false);
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
 
-    if (isRunning) {
-      interval = setInterval(() => {
-        setElapsedTime((prev) => prev + 1);
-      }, 1000);
+useEffect(() => {
+  let interval: NodeJS.Timeout | null = null;
+
+  if (isRunning && startTime) {
+    interval = setInterval(() => {
+      setElapsedTime((prev) => prev + 1);
+      
+      // Update saved timer state periodically
+      const timerData = {
+        isRunning: true,
+        startTime: startTime.toISOString(),
+        userName: userName.trim(),
+        selectedTeam,
+        selectedTask,
+        subTask,
+        assignedVolume: assignedVolume === "" ? null : assignedVolume,
+        processedVolume: processedVolume === "" ? null : processedVolume,
+      };
+      localStorage.setItem("activeTimer", JSON.stringify(timerData));
+    }, 1000);
+  }
+
+  return () => {
+    if (interval) clearInterval(interval);
+  };
+}, [isRunning, startTime, userName, selectedTeam, selectedTask, subTask, assignedVolume, processedVolume]);
+
+useEffect(() => {
+  const savedTimer = localStorage.getItem("activeTimer");
+  if (savedTimer) {
+    try {
+      const timerData = JSON.parse(savedTimer);
+      const savedStartTime = new Date(timerData.startTime);
+      const now = new Date();
+      const elapsed = Math.floor((now.getTime() - savedStartTime.getTime()) / 1000);
+      
+      // Only restore if the timer was running and elapsed time is valid
+      if (timerData.isRunning && elapsed >= 0) {
+        setIsRunning(true);
+        setStartTime(savedStartTime);
+        setElapsedTime(elapsed);
+        
+        // Restore form data
+        if (timerData.userName) setUserName(timerData.userName);
+        if (timerData.selectedTeam) setSelectedTeam(timerData.selectedTeam);
+        if (timerData.selectedTask) setSelectedTask(timerData.selectedTask);
+        if (timerData.subTask) setSubTask(timerData.subTask);
+        if (timerData.assignedVolume !== undefined) setAssignedVolume(timerData.assignedVolume);
+        if (timerData.processedVolume !== undefined) setProcessedVolume(timerData.processedVolume);
+      } else {
+        // Clear invalid timer data
+        localStorage.removeItem("activeTimer");
+      }
+    } catch (error) {
+      console.error("Error loading saved timer:", error);
+      localStorage.removeItem("activeTimer");
     }
+  }
+}, []); // Run only on mount
 
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning]);
 
-  const formatTime = useCallback((seconds: number) => {
+
+const formatTime = useCallback((seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
@@ -202,15 +251,40 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }, []);
 
+  
+  
   const handleStart = () => {
     if (!userName.trim() || !selectedTask) return;
+    const now = new Date();
     setIsRunning(true);
-    setStartTime(new Date());
+    setStartTime(now);
     setElapsedTime(0);
+    
+    // Save timer state to localStorage
+    const timerData = {
+      isRunning: true,
+      startTime: now.toISOString(),
+      userName: userName.trim(),
+      selectedTeam,
+      selectedTask,
+      subTask,
+      assignedVolume: assignedVolume === "" ? null : assignedVolume,
+      processedVolume: processedVolume === "" ? null : processedVolume,
+    };
+    localStorage.setItem("activeTimer", JSON.stringify(timerData));
+  };
+  
+  const handleStop = () => {
+    if (!isRunning || !startTime) return;
+    
+    // Store current processed volume in temp state
+    setTempProcessedVolume(processedVolume);
+    // Open dialog to enter processed volume
+    setStopDialogOpen(true);
   };
 
-  // const handleStop = () => {
-  //   if (!isRunning || !startTime) return;
+  // const handleConfirmStop = () => {
+  //   if (!startTime) return;
 
   //   const endTime = new Date();
   //   const entry: TimeEntry = {
@@ -220,11 +294,10 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   //     task: selectedTask,
   //     subTask: subTask.trim() || undefined,
   //     assignedVolume: assignedVolume === "" ? undefined : Number(assignedVolume),
-  //     processedVolume: processedVolume === "" ? undefined : Number(processedVolume),
-  //     remainingDeficit: assignedVolume !== "" && processedVolume !== "" 
-  //       ? Number(assignedVolume) - Number(processedVolume)
+  //     processedVolume: tempProcessedVolume === "" ? undefined : Number(tempProcessedVolume),
+  //     remainingDeficit: assignedVolume !== "" && tempProcessedVolume !== "" 
+  //       ? Number(assignedVolume) - Number(tempProcessedVolume)
   //       : undefined,
-
   //     startTime: startTime.toISOString(),
   //     endTime: endTime.toISOString(),
   //     duration: elapsedTime,
@@ -235,15 +308,10 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   //   setIsRunning(false);
   //   setElapsedTime(0);
   //   setStartTime(null);
+  //   setProcessedVolume(tempProcessedVolume); // Update the actual processed volume
+  //   setStopDialogOpen(false);
+  //   setTempProcessedVolume("");
   // };
-  const handleStop = () => {
-    if (!isRunning || !startTime) return;
-    
-    // Store current processed volume in temp state
-    setTempProcessedVolume(processedVolume);
-    // Open dialog to enter processed volume
-    setStopDialogOpen(true);
-  };
 
   const handleConfirmStop = () => {
     if (!startTime) return;
@@ -273,6 +341,9 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
     setProcessedVolume(tempProcessedVolume); // Update the actual processed volume
     setStopDialogOpen(false);
     setTempProcessedVolume("");
+    
+    // Clear saved timer state
+    localStorage.removeItem("activeTimer");
   };
 
   const handleCancelStop = () => {
@@ -780,7 +851,7 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
             Stop
           </Button>
         </div>
-        
+
       </CardContent>
 
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
