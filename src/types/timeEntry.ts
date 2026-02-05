@@ -11,4 +11,5 @@ export interface TimeEntry {
   endTime: string;
   duration: number;
   formattedDuration: string;
+  notes?: string;
 }

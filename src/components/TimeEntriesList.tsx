@@ -30,9 +30,12 @@ export const TimeEntriesList = ({
       "User Name": entry.userName,
       "Team": entry.teamName || "",
       "Task": entry.task,
-      "Sub Task": entry.subTask || "",      "Assigned Volume": entry.assignedVolume ?? "",
+      "Sub Task": entry.subTask || "",
+      "Assigned Volume": entry.assignedVolume ?? "",
       // "Processed Volume": entry.processedVolume ?? "",
-      "Remaining/Deficit": entry.remainingDeficit ?? "",      "Start Time": format(new Date(entry.startTime), "HH:mm:ss"),
+      "Remaining/Deficit": entry.remainingDeficit ?? "",
+      "Notes": entry.notes || "",
+      "Start Time": format(new Date(entry.startTime), "HH:mm:ss"),
       "End Time": format(new Date(entry.endTime), "HH:mm:ss"),
       "Duration": entry.formattedDuration,
       "Duration (seconds)": entry.duration,
@@ -140,6 +143,7 @@ export const TimeEntriesList = ({
                     </div>
                   </TableHead>
                   <TableHead className="font-semibold">Sub Task</TableHead>
+                  <TableHead className="font-semibold">Notes</TableHead>
                   <TableHead className="font-semibold text-right">Assigned Vol.</TableHead>
                   {/* <TableHead className="font-semibold text-right">Processed Vol.</TableHead> */}
                   <TableHead className="font-semibold text-right">Remaining/Deficit</TableHead>
@@ -170,6 +174,9 @@ export const TimeEntriesList = ({
                     <TableCell>
                       {entry.subTask || "-"}
                     </TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-xs break-words">
+                    {entry.notes || "-"}
+                  </TableCell>
                     <TableCell className="text-right">
                       {entry.assignedVolume ?? "-"}
                     </TableCell>

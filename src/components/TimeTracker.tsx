@@ -160,6 +160,7 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   const [selectedTeam, setSelectedTeam] = useState("");
   const [selectedTask, setSelectedTask] = useState("");
   const [subTask, setSubTask] = useState("");
+  const [notes, setNotes] = useState("");
   const [assignedVolume, setAssignedVolume] = useState<number | "">("");
   const [processedVolume, setProcessedVolume] = useState<number | "">("");
   const [isRunning, setIsRunning] = useState(false);
@@ -180,12 +181,42 @@ export const TimeTracker = ({ onTimeEntryComplete }: TimeTrackerProps) => {
   const [newTeamInput, setNewTeamInput] = useState("");
   const [addTeamConfirmOpen, setAddTeamConfirmOpen] = useState(false);
 
+// useEffect(() => {
+//   let interval: NodeJS.Timeout | null = null;
+
+//   if (isRunning && startTime) {
+//     interval = setInterval(() => {
+//       setElapsedTime((prev) => prev + 1);
+      
+//       // Update saved timer state periodically
+//       const timerData = {
+//         isRunning: true,
+//         startTime: startTime.toISOString(),
+//         userName: userName.trim(),
+//         selectedTeam,
+//         selectedTask,
+//         subTask,
+//         assignedVolume: assignedVolume === "" ? null : assignedVolume,
+//         processedVolume: processedVolume === "" ? null : processedVolume,
+//       };
+//       localStorage.setItem("activeTimer", JSON.stringify(timerData));
+//     }, 1000);
+//   }
+
+//   return () => {
+//     if (interval) clearInterval(interval);
+//   };
+// }, [isRunning, startTime, userName, selectedTeam, selectedTask, subTask, assignedVolume, processedVolume]);
+
 useEffect(() => {
   let interval: NodeJS.Timeout | null = null;
 
   if (isRunning && startTime) {
-    interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
+    // Calculate initial elapsed time
+    const updateElapsedTime = () => {
+      const now = new Date();
+      const elapsed = Math.floor((now.getTime() - startTime.getTime()) / 1000);
+      setElapsedTime(elapsed);
       
       // Update saved timer state periodically
       const timerData = {
@@ -197,15 +228,55 @@ useEffect(() => {
         subTask,
         assignedVolume: assignedVolume === "" ? null : assignedVolume,
         processedVolume: processedVolume === "" ? null : processedVolume,
+        notes,
       };
       localStorage.setItem("activeTimer", JSON.stringify(timerData));
-    }, 1000);
+    };
+    
+    // Update immediately
+    updateElapsedTime();
+    
+    // Then update every second
+    interval = setInterval(updateElapsedTime, 1000);
   }
 
   return () => {
     if (interval) clearInterval(interval);
   };
-}, [isRunning, startTime, userName, selectedTeam, selectedTask, subTask, assignedVolume, processedVolume]);
+}, [isRunning, startTime, userName, selectedTeam, selectedTask, subTask, assignedVolume, processedVolume, notes]);
+
+// useEffect(() => {
+//   const savedTimer = localStorage.getItem("activeTimer");
+//   if (savedTimer) {
+//     try {
+//       const timerData = JSON.parse(savedTimer);
+//       const savedStartTime = new Date(timerData.startTime);
+//       const now = new Date();
+//       const elapsed = Math.floor((now.getTime() - savedStartTime.getTime()) / 1000);
+      
+//       // Only restore if the timer was running and elapsed time is valid
+//       if (timerData.isRunning && elapsed >= 0) {
+//         setIsRunning(true);
+//         setStartTime(savedStartTime);
+//         setElapsedTime(elapsed);
+        
+//         // Restore form data
+//         if (timerData.userName) setUserName(timerData.userName);
+//         if (timerData.selectedTeam) setSelectedTeam(timerData.selectedTeam);
+//         if (timerData.selectedTask) setSelectedTask(timerData.selectedTask);
+//         if (timerData.subTask) setSubTask(timerData.subTask);
+//         if (timerData.assignedVolume !== undefined) setAssignedVolume(timerData.assignedVolume);
+//         if (timerData.processedVolume !== undefined) setProcessedVolume(timerData.processedVolume);
+//       } else {
+//         // Clear invalid timer data
+//         localStorage.removeItem("activeTimer");
+//       }
+//     } catch (error) {
+//       console.error("Error loading saved timer:", error);
+//       localStorage.removeItem("activeTimer");
+//     }
+//   }
+// }, []); // Run only on mount
 
 useEffect(() => {
   const savedTimer = localStorage.getItem("activeTimer");
@@ -220,6 +291,7 @@ useEffect(() => {
       if (timerData.isRunning && elapsed >= 0) {
         setIsRunning(true);
         setStartTime(savedStartTime);
+        // Calculate elapsed time based on actual time difference
         setElapsedTime(elapsed);
         
         // Restore form data
@@ -227,8 +299,13 @@ useEffect(() => {
         if (timerData.selectedTeam) setSelectedTeam(timerData.selectedTeam);
         if (timerData.selectedTask) setSelectedTask(timerData.selectedTask);
         if (timerData.subTask) setSubTask(timerData.subTask);
-        if (timerData.assignedVolume !== undefined) setAssignedVolume(timerData.assignedVolume);
-        if (timerData.processedVolume !== undefined) setProcessedVolume(timerData.processedVolume);
+        if (timerData.assignedVolume !== undefined && timerData.assignedVolume !== null) {
+          setAssignedVolume(timerData.assignedVolume);
+        }
+        if (timerData.processedVolume !== undefined && timerData.processedVolume !== null) {
+          setProcessedVolume(timerData.processedVolume);
+        }
+        if (timerData.notes) setNotes(timerData.notes);
       } else {
         // Clear invalid timer data
         localStorage.removeItem("activeTimer");
@@ -239,7 +316,6 @@ useEffect(() => {
     }
   }
 }, []); // Run only on mount
-
 
 
 const formatTime = useCallback((seconds: number) => {
@@ -270,6 +346,7 @@ const formatTime = useCallback((seconds: number) => {
       subTask,
       assignedVolume: assignedVolume === "" ? null : assignedVolume,
       processedVolume: processedVolume === "" ? null : processedVolume,
+      notes,
     };
     localStorage.setItem("activeTimer", JSON.stringify(timerData));
   };
@@ -304,6 +381,7 @@ const formatTime = useCallback((seconds: number) => {
       endTime: endTime.toISOString(),
       duration: elapsedTime,
       formattedDuration: formatTime(elapsedTime),
+      notes: notes.trim() || undefined,
     };
 
     onTimeEntryComplete(entry);
@@ -316,6 +394,9 @@ const formatTime = useCallback((seconds: number) => {
     
     // Clear saved timer state
     localStorage.removeItem("activeTimer");
+
+    // Optionally clear notes after completing an entry
+    setNotes("");
   };
 
   const handleCancelStop = () => {
@@ -799,6 +880,20 @@ const formatTime = useCallback((seconds: number) => {
               className="h-11 bg-muted"
             />
           </div>
+        </div>
+
+        {/* Notes (optional) */}
+        <div className="space-y-2">
+          <Label htmlFor="notes">
+            Notes (optional)
+          </Label>
+          <textarea
+            id="notes"
+            placeholder="Add any notes here..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="h-24 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+          />
         </div>
 
    
